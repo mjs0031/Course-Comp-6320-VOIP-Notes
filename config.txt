@@ -1,0 +1,2 @@
+Node 1 ian-laptop, 10010 50 120 links 2
+Node 2 ian-laptop, 10011 60 120 links 1
