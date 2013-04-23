@@ -4,7 +4,6 @@ package Third_Project_Code;
 // Java Package Support //
 import java.util.ArrayList;
 import java.io.IOException;
-
 import javax.sound.sampled.LineUnavailableException;
 
 // Internal Package Support //
@@ -256,7 +255,7 @@ public class Node{
 	 * @throws LineUnavailableException	: General LineUnavailableException
 	 */
 	public void startSending(int destNumber) throws IOException, LineUnavailableException{
-		sender       = new SocketSender(number, x, y, links, destNumber);
+		sender       = new SocketSender(number, links, destNumber);
 		senderThread = new Thread(sender);
 		senderThread.start();
 		sending = true;
