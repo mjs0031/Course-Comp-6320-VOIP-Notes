@@ -157,6 +157,7 @@ public class SocketSender implements Runnable{
 	 */
 	public void terminate(){
 		synchronized(lock){
+			
 			running = false;
 	
 			byte[] packet = new byte[128];
@@ -180,25 +181,26 @@ public class SocketSender implements Runnable{
 		
 		while(running){			
 			synchronized(lock){
-			
-				// Check for sequence number overflow.
-				if(!(sequenceNum < 65536)){
-					sequenceNum = 1;
-				} // end if
-				
-				// Create packet header and increment sequence number.
-				packet = createHeader(packet);
-				sequenceNum++;
-				
-				// Read sound data off the line and copy it into the packet after the header.
-				tLine.read(buffer, 0, buffer.length);
-				System.arraycopy(buffer, 0, packet, 8, buffer.length);
-				
-				// Send packet to all connected nodes.
-				for(int i = 0; i < linkedNodes.size(); i++){
-					sendPacket(linkedNodes.get(i), packet);
-				}// end for
-			}
+				if(sequenceNum != 0){
+					// Check for sequence number overflow.
+					if(!(sequenceNum < 65536)){
+						sequenceNum = 1;
+					} // end if
+					
+					// Create packet header and increment sequence number.
+					packet = createHeader(packet);
+					sequenceNum++;
+					
+					// Read sound data off the line and copy it into the packet after the header.
+					tLine.read(buffer, 0, buffer.length);
+					System.arraycopy(buffer, 0, packet, 8, buffer.length);
+					
+					// Send packet to all connected nodes.
+					for(int i = 0; i < linkedNodes.size(); i++){
+						sendPacket(linkedNodes.get(i), packet);
+					}// end for
+				}// end if
+			}// end synchronized
 		}// end while
 	} // end run()		
 } // end SocketSender class
