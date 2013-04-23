@@ -55,6 +55,7 @@ public class SocketSender implements Runnable{
 	
 	// Control Variables
 	private boolean running = true;
+	private Object lock = new Object();
 	
 	//Packet Header
 	private int sequenceNum, srcAddress, destAddress;
@@ -155,16 +156,18 @@ public class SocketSender implements Runnable{
 	 * called afterward in order to wait for the thread to finish.
 	 */
 	public void terminate(){
-		running = false;
-
-		byte[] packet = new byte[128];
-		
-		sequenceNum = 0;
-		packet = createHeader(packet);
-		
-		for(int i = 0; i < linkedNodes.size(); i++){
-			sendPacket(linkedNodes.get(i), packet);
-		}// end for
+		synchronized(lock){
+			running = false;
+	
+			byte[] packet = new byte[128];
+			
+			sequenceNum = 0;
+			packet = createHeader(packet);
+			
+			for(int i = 0; i < linkedNodes.size(); i++){
+				sendPacket(linkedNodes.get(i), packet);
+			}// end for
+		}
 	} // end terminate()	
 	
 	/**
@@ -176,24 +179,26 @@ public class SocketSender implements Runnable{
 		byte[] buffer = new byte[120];
 		
 		while(running){			
+			synchronized(lock){
 			
-			// Check for sequence number overflow.
-			if(!(sequenceNum < 65536)){
-				sequenceNum = 1;
-			} // end if
-			
-			// Create packet header and increment sequence number.
-			packet = createHeader(packet);
-			sequenceNum++;
-			
-			// Read sound data off the line and copy it into the packet after the header.
-			tLine.read(buffer, 0, buffer.length);
-			System.arraycopy(buffer, 0, packet, 8, buffer.length);
-			
-			// Send packet to all connected nodes.
-			for(int i = 0; i < linkedNodes.size(); i++){
-				sendPacket(linkedNodes.get(i), packet);
-			}// end for
+				// Check for sequence number overflow.
+				if(!(sequenceNum < 65536)){
+					sequenceNum = 1;
+				} // end if
+				
+				// Create packet header and increment sequence number.
+				packet = createHeader(packet);
+				sequenceNum++;
+				
+				// Read sound data off the line and copy it into the packet after the header.
+				tLine.read(buffer, 0, buffer.length);
+				System.arraycopy(buffer, 0, packet, 8, buffer.length);
+				
+				// Send packet to all connected nodes.
+				for(int i = 0; i < linkedNodes.size(); i++){
+					sendPacket(linkedNodes.get(i), packet);
+				}// end for
+			}
 		}// end while
 	} // end run()		
 } // end SocketSender class
