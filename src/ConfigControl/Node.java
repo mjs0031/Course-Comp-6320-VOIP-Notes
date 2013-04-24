@@ -1,5 +1,11 @@
+//Package Declaration //
 package ConfigControl;
 
+//Java Package Support //
+import java.util.Random;
+
+//Internal Package Support //
+//{ Not Applicable }
 
 /**
  * 
@@ -7,7 +13,7 @@ package ConfigControl;
  * 
  * @author(s)	: Ian Middleton, Zach Ogle, Matthew J Swann
  * @version  	: 1.0
- * Last Update	: 2013-04-23
+ * Last Update	: 2013-04-24
  * Update By	: Matthew J Swann
  * 
  * 
@@ -24,7 +30,8 @@ public class Node {
 	private String[] input_array = new String[0];
 	private int[] link_array;
 	private int node_id, port_id, x_coord, y_coord;
-	public final int DATA_DESIGNATIONS = 7;
+	private final int DATA_DESIGNATIONS = 7, SEVEN = 7;
+	private final float BOT = (float)0.25, MID = (float)0.50, TOP = (float)0.75;
 
 	
 	/*
@@ -37,7 +44,7 @@ public class Node {
 			input_array = input_line.split("\\s+");
 		}
 		catch (Exception e){
-			
+			System.out.println(e.getMessage());
 		}
 		
 		// Skips 'NODE' designation on '0' index.
@@ -67,13 +74,38 @@ public class Node {
 		this.link_array = new int[input_array.length - DATA_DESIGNATIONS];
 		for(int i = DATA_DESIGNATIONS; i < input_array.length; i++){
 			this.link_array[i-DATA_DESIGNATIONS] = Integer.parseInt(input_array[i]);
+		}// endfor	
+		
+	}// end Node()
+	
+	
+	/* Mutates the node data based on random number generation. This code
+	 * emulates a person moving in a simulated wireless network
+	 */
+	public void mutate(){
+		Random rand = new Random();
+		
+		float direction = rand.nextFloat();
+		float movement  = SEVEN*rand.nextFloat();
+		
+		// Directional movement based of randomization.
+		if(direction < BOT){
+			this.x_coord -= Math.round(movement);
 		}
-		
-		
-	}
+		else if (direction < MID){
+			this.y_coord -= Math.round(movement);
+		}
+		else if (direction < TOP){
+			this.x_coord += Math.round(movement);
+		} 
+		else {
+			this.y_coord += Math.round(movement);
+		}	
+	} // end mutate()
 	
 	
-	/* Returns node info report for tracking/testing purposes.
+	/**
+	 * Returns node info report for tracking/testing purposes.
 	 * 
 	 * @return Node information report as a String.
 	 */
@@ -88,10 +120,29 @@ public class Node {
 			output += "    link #"+(i+1)+": "+link_array[i]+"\n";
 		}
 		return output;
+	} // end node_to_string()
+	
+	
+	/**
+	 * Converts a node to a String line such that it can be returned to the
+	 * configuration file.
+	 * 
+	 * @return output	: String representation of a line.
+	 */
+	public String node_to_line(){
+		String output = "Node "+this.node_id+" "+this.node_address+", "+
+						this.port_id+" "+this.x_coord+" "+this.y_coord+" "+
+						"links";
+		for(int i=0; i<this.link_array.length; i++){
+			output += " "+this.link_array[i];
+		}
+		output += "\n";
+		return output;
 	}
 	
 	
-	/* Returns the node's identification number.
+	/** 
+	 * Returns the node's identification number.
 	 * 
 	 * @return Unique ID number for the node.
 	 */
@@ -100,7 +151,8 @@ public class Node {
 	}
 	
 	
-	/* Sets the node's identification number.
+	/** 
+	 * Sets the node's identification number.
 	 * 
 	 * @param new_id: The new ID number for the node.
 	 */
@@ -109,7 +161,8 @@ public class Node {
 	}
 	
 	
-	/* Returns the node's port number.
+	/** 
+	 * Returns the node's port number.
 	 * 
 	 * @return Unique port number for the node.
 	 */
@@ -118,7 +171,8 @@ public class Node {
 	}
 	
 	
-	/* Sets the node's port number.
+	/** 
+	 * Sets the node's port number.
 	 * 
 	 * @param new_id: The new port number for the node.
 	 */
@@ -127,7 +181,8 @@ public class Node {
 	}
 	
 	
-	/* Returns the node's current link array.
+	/** 
+	 * Returns the node's current link array.
 	 * 
 	 * @return The current link array for the node.
 	 */
@@ -136,7 +191,8 @@ public class Node {
 	}
 	
 	
-	/* Sets the current node's link array.
+	/** 
+	 * Sets the current node's link array.
 	 * 
 	 * @param new_links: New set of links for the node.
 	 */
@@ -145,7 +201,8 @@ public class Node {
 	}
 	
 	
-	/* Returns the node's 'x' coordinate.
+	/** 
+	 * Returns the node's 'x' coordinate.
 	 * 
 	 * @return 'X' coord for the node.
 	 */
@@ -154,7 +211,8 @@ public class Node {
 	}
 	
 	
-	/* Sets the node's 'x' coord to new value.
+	/** 
+	 * Sets the node's 'x' coord to new value.
 	 * 
 	 * @param new_coord: New 'x' coord.
 	 */
@@ -163,7 +221,8 @@ public class Node {
 	}
 	
 	
-	/* Returns the node's 'y' coordinate.
+	/** 
+	 * Returns the node's 'y' coordinate.
 	 * 
 	 * @return 'Y' coord for the node.
 	 */
@@ -172,7 +231,8 @@ public class Node {
 	}
 	
 
-	/* Sets the node's 'y' coord to new value.
+	/** 
+	 * Sets the node's 'y' coord to new value.
 	 * 
 	 * @param new_coord: New 'y' coord.
 	 */
@@ -181,7 +241,8 @@ public class Node {
 	}
 	
 	
-	/* Returns the node's known address.
+	/** 
+	 * Returns the node's known address.
 	 * 
 	 * @return The node's currently known address.
 	 */
@@ -190,7 +251,8 @@ public class Node {
 	}
 	
 	
-	/* Sets the node's address to a new value.
+	/** 
+	 * Sets the node's address to a new value.
 	 * 
 	 * @param new_address: New address for the node.
 	 */
@@ -198,4 +260,4 @@ public class Node {
 		this.node_address = new_address;
 	}
 
-}
+} // end Node Class
