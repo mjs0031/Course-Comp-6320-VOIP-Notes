@@ -62,7 +62,7 @@ public class SocketReceiver implements Runnable{
 	String address;
 	ArrayList<Node> nodes;
 	ArrayList<int[]> cache = new ArrayList<int[]>();
-	ArrayList<int[]> neighborTable = new ArrayList<int[]>();
+	ArrayList<NeighborRow> neighborTable = new ArrayList<NeighborRow>();
 	ArrayList<int[]> topologyTable = new ArrayList<int[]>();
 	ArrayList<int[]> routingTable = new ArrayList<int[]>();
 	byte[] playbuf = new byte[120];
@@ -243,20 +243,21 @@ public class SocketReceiver implements Runnable{
 					case HELLO_MESSAGE:
 						for (int i = 0; i < neighborTable.size(); i++)
 						{
-							if (neighborTable.get(i)[0] == source)
+							if (neighborTable.get(i).getNodeNumber() == source)
 							{
 								found = true;
-								if (neighborTable.get(i)[2] == 2)
+								if (neighborTable.get(i).getNumHops() == 2)
 								{
-									neighborTable.get(i)[2] = 1;
-									neighborTable.get(i)[1] = 1;
+									neighborTable.get(i).setNumHops(1);
+									neighborTable.get(i).setLinkStatus(1);
 								}
 							}
 						}
 						if (!found)
 						{
-							int[] newNeighbor = {source, 0, 1, 0, 0, 1, 0};
-							neighborTable.add(newNeighbor);
+							ArrayList<Integer> newNeighbors = new ArrayList<Integer>();
+							NeighborRow newNeighborRow = new NeighborRow(source, 0, 1, newNeighbors, 0, 1, false);
+							neighborTable.add(newNeighborRow);
 						}
 						found = false;
 						length = dp.getData()[9] + 128;
@@ -268,10 +269,10 @@ public class SocketReceiver implements Runnable{
 							{
 								for (int j = 0; j < neighborTable.size(); j++)
 								{
-									if (neighborTable.get(j)[0] == source)
+									if (neighborTable.get(j).getNodeNumber() == source)
 									{
 										found = true;
-										neighborTable.get(j)[1] = 1;
+										neighborTable.get(j).setLinkStatus(1);
 									}
 								}
 							}
@@ -279,18 +280,23 @@ public class SocketReceiver implements Runnable{
 							{
 								for (int j = 0; j < neighborTable.size(); j++)
 								{
-									if (neighborTable.get(j)[0] == neighbor)
+									if (neighborTable.get(j).getNodeNumber() == source)
 									{
 										found = true;
+										if (neighborTable.get(j).getTwoHopNeighbors().indexOf(neighbor) == -1)
+										{
+											neighborTable.get(j).getTwoHopNeighbors().add(neighbor);
+										}
 									}
 								}
 							}
 							if (!found)
 							{
-								int[] newNeighbor = {neighbor, 0, 2, source, 0, 1, 0};
-								neighborTable.add(newNeighbor);
+								ArrayList<Integer> newNeighbors = new ArrayList<Integer>();
+								newNeighbors.add(neighbor);
+								NeighborRow newNeighborRow = new NeighborRow(source, 0, 2, newNeighbors, 0, 1, false);
+								neighborTable.add(newNeighborRow);
 							}
-							found = false;
 						}
 						break;
 					case TC_MESSAGE:
