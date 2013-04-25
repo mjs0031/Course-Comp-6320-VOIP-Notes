@@ -60,8 +60,12 @@ public class SocketSender implements Runnable{
 	//Packet Header
 	private int sequenceNum, srcAddress, destAddress;
 	
-	public SocketSender() throws SocketException{
-		s       = new DatagramSocket();
+	public SocketSender(){
+		try {
+			s       = new DatagramSocket();
+		} catch (SocketException e) {
+			System.out.println("SocketSender: Socket Creation Problem");
+		}
 	}
 	
 	/**
@@ -74,16 +78,26 @@ public class SocketSender implements Runnable{
 	 * @throws LineUnavailable		: General LineUnavailable for package 
 	 * 										functions.
 	 */
-	public SocketSender(int nodeNum, ArrayList<Node> linkedNodes, int destNum) throws IOException, LineUnavailableException{
+	public SocketSender(int nodeNum, ArrayList<Node> linkedNodes, int destNum){
 		this.linkedNodes = linkedNodes;
 		
-		s       = new DatagramSocket();
+		try {
+			s       = new DatagramSocket();
+		} catch (SocketException e) {
+			System.out.println("SocketSender: Socket Creation Problem");
+		}
 		
 		format  = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100,
 												16, 2, 4, 44100, false);
 		DataLine.Info tLineInfo = new DataLine.Info(TargetDataLine.class, format);
-		tLine   = (TargetDataLine)AudioSystem.getLine(tLineInfo);
-		tLine.open(this.format);
+		
+		try {
+			tLine   = (TargetDataLine)AudioSystem.getLine(tLineInfo);
+			tLine.open(this.format);
+		} catch (LineUnavailableException e) {
+			System.out.println("SocketSender: Missing Data Line");
+		}
+		
 		tLine.start();
 		
 		sequenceNum      = 1;
@@ -118,6 +132,7 @@ public class SocketSender implements Runnable{
 		}// end try
 		catch (UnknownHostException e1) {
 			nextAddress = null;
+			System.out.println("SocketSender: Invalid Address (sendPacket)");
 		}// end catch
 		
 		// Get the Port Number.
@@ -132,7 +147,7 @@ public class SocketSender implements Runnable{
 			System.out.println("Sending packet: " + (((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128) + "	" + (((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128) + "	" + (((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128) + "	" + (((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128));
 		}// end try
 		catch (IOException e){
-			// empty sub-block
+			System.out.println("SocketSender: Unable to send datagram packet (sendPacket)");
 		}// end catch
 	}
 	
@@ -144,11 +159,24 @@ public class SocketSender implements Runnable{
 	 * @param packet		: The packet to be sent.
 	 * @throws IOException	: General IOException.
 	 */
-	public void forward(String address, int port, byte[] packet) throws IOException{
-		InetAddress fwdAddress = InetAddress.getByName(address);
+	public void forward(String address, int port, byte[] packet){
+		InetAddress fwdAddress;
+		
+		try {
+			fwdAddress = InetAddress.getByName(address);
+		} catch (UnknownHostException e) {
+			fwdAddress = null;
+			System.out.println("SocketSender: Invalid Address (forward)");
+		}
+		
 		dp      = new DatagramPacket(packet, packet.length, fwdAddress, port);
-		s.send(dp);
-		System.out.println("Forwarding packet: " + (((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128) + "	" + (((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128) + "	" + (((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128) + "	" + (((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128));
+		
+		try {
+			s.send(dp);
+			System.out.println("Forwarding packet: " + (((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128) + "	" + (((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128) + "	" + (((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128) + "	" + (((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128));
+		} catch (IOException e) {
+			System.out.println("SocketSender: Unable to send datagram packet (forward)");
+		}
 	} // end forward()
 	
 	/**

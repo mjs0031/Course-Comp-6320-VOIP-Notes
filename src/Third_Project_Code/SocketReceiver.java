@@ -5,6 +5,7 @@ package Third_Project_Code;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.SocketException;
 //import java.net.InetAddress;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -63,14 +64,26 @@ public class SocketReceiver implements Runnable{
 	 * @throws LineUnavailable		: General LineUnavailable for package 
 	 * 										functions.
 	 */
-	public SocketReceiver(int nodeNum, String address, int port, ArrayList<Node> linkedNodes, int x, int y) throws IOException, LineUnavailableException{
+	public SocketReceiver(int nodeNum, String address, int port, ArrayList<Node> linkedNodes, int x, int y){
 		this.buf    = new byte[128];
-		this.s      = new DatagramSocket(port);
+		
+		try {
+			this.s      = new DatagramSocket(port);
+		} catch (SocketException e1) {
+			System.out.println("SocketReciever: Socket Creation Problem");
+		}
+		
 		this.dp     = new DatagramPacket(buf, buf.length);
 		this.format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100,
 												16, 2, 4, 44100, false);		
 		DataLine.Info sLineInfo = new DataLine.Info(SourceDataLine.class, this.format);
-		this.sLine   = (SourceDataLine)AudioSystem.getLine(sLineInfo);
+		
+		try {
+			this.sLine   = (SourceDataLine)AudioSystem.getLine(sLineInfo);
+		} catch (LineUnavailableException e) {
+			System.out.println("SocketReceiver: Missing Data Line (SocketReceiver)");
+		}
+		
 		this.nodes   = linkedNodes;
 		this.number  = nodeNum;
 		this.address = address;
@@ -81,6 +94,62 @@ public class SocketReceiver implements Runnable{
 		sender = new SocketSender();
 		
 	} // end SocketReceiver()
+	
+	public Node getNode(int nodeNum){
+		for (int count = 0; count < nodes.size(); count++)
+		{
+			if (nodes.get(count).getNumber() == nodeNum)
+			{
+				return nodes.get(count);
+			}
+		}
+		return null;
+	}
+	
+	public boolean checkTable(int sequence, int source, int destination){
+		
+		for (int count = 0; count < cache.size(); count++){
+			if (cache.get(count)[0] == source && cache.get(count)[1] == destination){
+				
+				if (cache.get(count)[2] < sequence){
+					cache.get(count)[2] = sequence;
+					return false;
+				}
+				else if(sequence == 0){
+					cache.get(count)[2] = 0;
+					return true;
+				}else{
+					return true;
+				}
+			}
+		}
+		
+		cache.add(new int[3]);
+		cache.get(cache.size()-1)[0] = source;
+		cache.get(cache.size()-1)[1] = destination;
+		cache.get(cache.size()-1)[2] = sequence;
+				
+		return false;
+	}
+	
+	public void playPacket(){
+		System.arraycopy(this.dp.getData(), 8, playbuf, 0, playbuf.length);
+		System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
+		this.sLine.write(playbuf, 0, playbuf.length);
+	}
+	
+	public void forwardPacket(int prevHop){
+		byte[] buffer = dp.getData();
+		buffer[6] = (byte)((number / 256) - 128);
+		buffer[7] = (byte)((number % 256) - 128);
+	
+		for (int count = 0; count < nodes.size(); count++){
+			
+			if (nodes.get(count).getNumber() != prevHop){
+				sender.forward(nodes.get(count).getAddress(), nodes.get(count).getPort(), buffer);
+			}
+		}
+	}
 	
 	/**
 	 * Terminate can be called to terminate execution of the thread. A join should be
@@ -94,13 +163,7 @@ public class SocketReceiver implements Runnable{
 			buffer[i] = -128;
 		}
 		
-		try {
-			sender.forward(address, port, buffer);
-		}
-		
-		catch (IOException e) {
-			// Live on the edge.
-		}
+		sender.forward(address, port, buffer);
 		
 	} // end terminate()
 	
@@ -114,13 +177,13 @@ public class SocketReceiver implements Runnable{
 	@Override
 	public void run(){
 	
-		boolean trash = false;
+		boolean isTrash = false;
+		
 		try {
 			this.sLine.open(this.format);
 		}
-		
 		catch (LineUnavailableException e){
-			// empty sub-block	
+			System.out.println("SocketReceiver: Missing Data Line (run)");
 		}
 		
 		this.sLine.start();
@@ -131,24 +194,18 @@ public class SocketReceiver implements Runnable{
 			try{
 				this.s.receive(this.dp);
 			}
-			
 			catch (IOException e){
-				// empty sub-block		
+				System.out.println("SocketReceiver: Bad packet reception");	
 			}
 			
 			int sequence    = ((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128;
 			int source      = ((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128;
 			int destination = ((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128;
 			int prevHop     = ((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128;
-			Node node = new Node();
 			
-			for (int count = 0; count < nodes.size(); count++)
-			{
-				if (nodes.get(count).getNumber() == prevHop)
-				{
-					node = nodes.get(count);
-					break;
-				}
+			Node prevNode = getNode(prevHop);
+			if(prevNode == null){
+				System.out.println("Invalid Previous Hop");
 			}
 			
 			if (sequence == 0){
@@ -157,68 +214,23 @@ public class SocketReceiver implements Runnable{
 				}
 			}
 			
-			if (!PacketDropRate.isPacketDropped(x, y, node.getX(), node.getY()) && running)
+			if (!PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()) && running)
 			{
-
-				int count;
 				
-				for (count = 0; count < cache.size(); count++){
+				isTrash = checkTable(sequence, source, destination);
 			
-					if (cache.get(count)[0] == source && cache.get(count)[1] == destination){
-				
-						if (cache.get(count)[2] < sequence){
-							cache.get(count)[2] = sequence;
-							break;
-						}
-						else if(sequence == 0){
-							cache.get(count)[2] = 0;
-							trash = true;
-						}else{
-							trash = true;
-						}
-					}
+				if (destination == number & !isTrash){
+					playPacket();
 				}
-				
-				if (count == cache.size()){
-				
-				cache.add(new int[3]);
-				cache.get(count)[0] = source;
-				cache.get(count)[1] = destination;
-				cache.get(count)[2] = sequence;
-				}
-			
-				if (destination == number & !trash){
-					System.arraycopy(this.dp.getData(), 8, playbuf, 0, playbuf.length);
-					System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
-					this.sLine.write(playbuf, 0, playbuf.length);
-				}
-			
-				else if (source != number && !trash){
-				
-				
-					byte[] buffer = dp.getData();
-					buffer[6] = (byte)((number / 256) - 128);
-					buffer[7] = (byte)((number % 256) - 128);
-				
-					for (count = 0; count < nodes.size(); count++){
-						
-						if (nodes.get(count).getNumber() != prevHop){
-							try {
-								sender.forward(nodes.get(count).getAddress(), nodes.get(count).getPort(), buffer);
-							}	
-						
-							catch (IOException e){
-							//empty sub-block
-							}
-						}
-					}
+				else if (source != number && !isTrash){
+					forwardPacket(prevHop);
 				}
 			}
 			else
 			{
-				System.out.println("Packet Dropped For " + node.getNumber());
+				System.out.println("Packet Dropped For " + prevNode.getNumber());
 			}
-			trash = false;
+			isTrash = false;
 		} // end while
 		
 		s.close();
