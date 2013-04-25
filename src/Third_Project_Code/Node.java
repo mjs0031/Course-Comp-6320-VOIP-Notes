@@ -296,7 +296,6 @@ public class Node{
 	public void stopReceiving() throws InterruptedException{
 		receiver.terminate();
 		receiverThread.join();
-		
 	} // end stopReceiving()
 	
 } // end Node class

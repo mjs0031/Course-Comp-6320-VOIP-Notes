@@ -67,6 +67,9 @@ public class SocketReceiver implements Runnable{
 	ArrayList<int[]> routingTable = new ArrayList<int[]>();
 	byte[] playbuf = new byte[120];
 	
+	SocketReceiverHelper helper;
+	Thread helperThread;
+	
 	/**
 	 * Base constructor.
 	 * 
@@ -182,6 +185,22 @@ public class SocketReceiver implements Runnable{
 		
 	} // end terminate()
 	
+	public void startHelper(){
+		helper       = new SocketReceiverHelper(number, nodes);
+		helperThread = new Thread(helper);
+		helperThread.start();
+	}
+	
+	public void stopHelper(){
+		helper.terminate();
+		
+		try {
+			helperThread.join();
+		} catch (InterruptedException e) {
+			System.out.println("SocketReceiver: Helper thread interruption problem.");
+		}
+	}
+	
 	/**
 	 * Run command called automatically by Thread.start().
 	 * 
@@ -192,7 +211,10 @@ public class SocketReceiver implements Runnable{
 	@Override
 	public void run(){
 	
+		startHelper();
+		
 		boolean isTrash = false;
+		Node prevNode = null;
 		
 		try {
 			this.sLine.open(this.format);
@@ -218,10 +240,7 @@ public class SocketReceiver implements Runnable{
 			int destination = ((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128;
 			int prevHop     = ((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128;
 			
-			Node prevNode = getNode(prevHop);
-			if(prevNode == null){
-				System.out.println("Invalid Previous Hop");
-			}
+			System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
 			
 			if (sequence == 0){
 				if(source == 0){
@@ -229,7 +248,14 @@ public class SocketReceiver implements Runnable{
 				}
 			}
 			
-			if (!PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()) && running)
+			if(running){
+				prevNode = getNode(prevHop);
+				if(prevNode == null){
+					System.out.println("Invalid Previous Hop");
+				}
+			}
+			
+			if (running && !PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()))
 			{
 				if (sequence == 0)
 				{
@@ -298,6 +324,7 @@ public class SocketReceiver implements Runnable{
 								neighborTable.add(newNeighborRow);
 							}
 						}
+						helper.updateNeighborTable(neighborTable);
 						break;
 					case TC_MESSAGE:
 						break;
@@ -315,12 +342,13 @@ public class SocketReceiver implements Runnable{
 			}
 			else
 			{
-				System.out.println("Packet Dropped For " + prevNode.getNumber());
+				//System.out.println("Packet Dropped");
 			}
 			isTrash = false;
 		} // end while
-		
+		stopHelper();
 		s.close();
+		System.out.println("receiver out");
 	} // end SocketReceiver.run()
 
 	

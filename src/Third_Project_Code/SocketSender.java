@@ -230,5 +230,7 @@ public class SocketSender implements Runnable{
 				}// end if
 			}// end synchronized
 		}// end while
+		s.close();
+		System.out.println("sender out");
 	} // end run()		
 } // end SocketSender class
