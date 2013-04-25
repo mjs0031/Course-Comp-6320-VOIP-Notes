@@ -38,6 +38,13 @@ import java.util.ArrayList;
 
 
 public class SocketReceiver implements Runnable{
+	// Constants
+	public static final int RESET_MESSAGE = 0;
+	public static final int HELLO_MESSAGE = 1;
+	public static final int TC_MESSAGE = 2;
+	public static final int UNIDIRECTIONAL = 0;
+	public static final int BIDIRECTIONAL = 1;
+	public static final int MPR = 2;
 	
 	// Audio Variables
 	AudioFormat format;
@@ -55,6 +62,9 @@ public class SocketReceiver implements Runnable{
 	String address;
 	ArrayList<Node> nodes;
 	ArrayList<int[]> cache = new ArrayList<int[]>();
+	ArrayList<int[]> neighborTable = new ArrayList<int[]>();
+	ArrayList<int[]> topologyTable = new ArrayList<int[]>();
+	ArrayList<int[]> routingTable = new ArrayList<int[]>();
 	byte[] playbuf = new byte[120];
 	
 	/**
@@ -151,6 +161,11 @@ public class SocketReceiver implements Runnable{
 		}
 	}
 	
+	public void updateMPR()
+	{
+		
+	}
+	
 	/**
 	 * Terminate can be called to terminate execution of the thread. A join should be
 	 * called afterward in order to wait for the thread to finish.
@@ -216,6 +231,71 @@ public class SocketReceiver implements Runnable{
 			
 			if (!PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()) && running)
 			{
+				if (sequence == 0)
+				{
+					int msgType = dp.getData()[8] + 128;
+					int length, neighbor, status;
+					boolean found = false;
+					switch (msgType)
+					{
+					case RESET_MESSAGE:
+						break;
+					case HELLO_MESSAGE:
+						for (int i = 0; i < neighborTable.size(); i++)
+						{
+							if (neighborTable.get(i)[0] == source)
+							{
+								found = true;
+								if (neighborTable.get(i)[2] == 2)
+								{
+									neighborTable.get(i)[2] = 1;
+								}
+							}
+						}
+						if (!found)
+						{
+							int[] newNeighbor = {source, 0, 1, 0, 0, 1, 0};
+							neighborTable.add(newNeighbor);
+						}
+						found = false;
+						length = dp.getData()[9] + 128;
+						for (int i = 10; i < length; i += 3)
+						{
+							neighbor = ((dp.getData()[i] + 128) * 256) + dp.getData()[i + 1] + 128;
+							status   = dp.getData()[i + 2] + 128;
+							if (number == neighbor)
+							{
+								for (int j = 0; j < neighborTable.size(); j++)
+								{
+									if (neighborTable.get(j)[0] == source)
+									{
+										found = true;
+										neighborTable.get(j)[1] = 1;
+									}
+								}
+							}
+							else
+							{
+								for (int j = 0; j < neighborTable.size(); j++)
+								{
+									if (neighborTable.get(j)[0] == neighbor)
+									{
+										found = true;
+									}
+								}
+							}
+							if (!found)
+							{
+								int[] newNeighbor = {neighbor, 0, 2, source, 0, 1, 0};
+								neighborTable.add(newNeighbor);
+							}
+							found = false;
+						}
+						break;
+					case TC_MESSAGE:
+						break;
+					}
+				}
 				
 				isTrash = checkTable(sequence, source, destination);
 			
