@@ -23,8 +23,7 @@ public class test {
 			System.out.println("X Co: "+n.get_x_coord());
 			System.out.println("Y Co: "+n.get_y_coord());	
 			
-			System.out.println(n.node_to_line());
-	
-	}
+			System.out.println(n.node_to_line());	
+	} // end main()
 
-}
+} // end test Class
