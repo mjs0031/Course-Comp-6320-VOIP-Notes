@@ -18,7 +18,7 @@ import java.util.Scanner;
  * 
  * @author(s)	: Ian Middleton, Zach Ogle, Matthew J Swann
  * @version  	: 1.0
- * Last Update	: 2013-04-24
+ * Last Update	: 2013-04-25
  * Update By	: Matthew J Swann
  * 
  * 
@@ -52,10 +52,10 @@ public class Swarm {
 		while(running == true){
 			this.setup();
 		
-			for(int i = 0; i < the_swarm.size(); i++){
+			for(int i = 0; i < this.the_swarm.size(); i++){
 				this.the_swarm.get(i).mutate();
-				System.out.println(the_swarm.get(i).node_to_string());
-			}
+				//System.out.println(this.the_swarm.get(i).node_to_line());
+			} // endfor
 		
 			this.tear_down();
 			
@@ -95,8 +95,8 @@ public class Swarm {
 		try{
 			FileWriter file_write = new FileWriter(System.getProperty("user.dir")+"\\src\\ConfigControl\\config.txt");
 			
-			// Non-iterating for-loops FTW!
-			for(int i = 0; i < the_swarm.size();){
+			// Non-increasing for-loops FTW!
+			for(int i = 0; i < this.the_swarm.size();){
 				file_write.write(this.the_swarm.remove(i).node_to_line());
 			} // endfor
 		

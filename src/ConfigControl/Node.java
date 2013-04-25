@@ -91,16 +91,28 @@ public class Node {
 		// Directional movement based of randomization.
 		if(direction < BOT){
 			this.x_coord -= Math.round(movement);
-		}
+			if (this.x_coord < 0){
+				this.x_coord = Math.abs(this.x_coord+200);
+			}
+		} 
 		else if (direction < MID){
 			this.y_coord -= Math.round(movement);
-		}
+			if (this.y_coord < 0){
+				this.y_coord = Math.abs(this.y_coord+200);
+			}
+		} 
 		else if (direction < TOP){
 			this.x_coord += Math.round(movement);
+			if (this.x_coord > 200){
+				this.x_coord = Math.abs(this.x_coord-200);
+			}
 		} 
 		else {
 			this.y_coord += Math.round(movement);
-		}	
+			if (this.y_coord > 200){
+				this.y_coord = Math.abs(this.y_coord-200);
+			}
+		} 	
 	} // end mutate()
 	
 	

@@ -3,6 +3,7 @@ package ConfigControl;
 
 //Java Package Support //
 import java.io.IOException;
+import java.io.FileNotFoundException;
 
 //Internal Package Support //
 //{ Not Applicable }
@@ -31,12 +32,21 @@ public class Harness {
 	 * 
 	 * @param args     : Command line arguments.
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, FileNotFoundException {
 		try {
 			Swarm s = new Swarm(args[0]);
 		}
 		catch (ArrayIndexOutOfBoundsException e){
-			Swarm s = new Swarm(System.getProperty("user.dir")+"\\src\\ConfigControl\\config.txt");
+			try{
+				System.out.println(e.getMessage());
+				
+				Swarm s = new Swarm(System.getProperty("user.dir")+"\\src\\ConfigControl\\config.txt");
+			}
+			catch (FileNotFoundException f){
+				System.out.println(f.getMessage());
+				
+				Swarm s = new Swarm(System.getProperty("user.dir")+"\\config.txt");
+			}
 		}
 
 	} // end main()
