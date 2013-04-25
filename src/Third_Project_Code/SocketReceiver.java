@@ -249,6 +249,7 @@ public class SocketReceiver implements Runnable{
 								if (neighborTable.get(i)[2] == 2)
 								{
 									neighborTable.get(i)[2] = 1;
+									neighborTable.get(i)[1] = 1;
 								}
 							}
 						}
