@@ -38,6 +38,13 @@ import java.util.ArrayList;
 
 
 public class SocketReceiver implements Runnable{
+	// Constants
+	public static final int RESET_MESSAGE = 0;
+	public static final int HELLO_MESSAGE = 1;
+	public static final int TC_MESSAGE = 2;
+	public static final int UNIDIRECTIONAL = 0;
+	public static final int BIDIRECTIONAL = 1;
+	public static final int MPR = 2;
 	
 	// Audio Variables
 	AudioFormat format;
@@ -55,7 +62,13 @@ public class SocketReceiver implements Runnable{
 	String address;
 	ArrayList<Node> nodes;
 	ArrayList<int[]> cache = new ArrayList<int[]>();
+	ArrayList<NeighborRow> neighborTable = new ArrayList<NeighborRow>();
+	ArrayList<int[]> topologyTable = new ArrayList<int[]>();
+	ArrayList<int[]> routingTable = new ArrayList<int[]>();
 	byte[] playbuf = new byte[120];
+	
+	SocketReceiverHelper helper;
+	Thread helperThread;
 	
 	/**
 	 * Base constructor.
@@ -151,6 +164,54 @@ public class SocketReceiver implements Runnable{
 		}
 	}
 	
+	public void updateMPR()
+	{
+		ArrayList<NeighborRow> tempTable = new ArrayList<NeighborRow>();
+		for (int i = 0; i < neighborTable.size(); i++)
+		{
+			tempTable.add(neighborTable.get(i));
+		}
+		int size = tempTable.size();
+		for (int i = 0; i < size; i++)
+		{
+			int maxSize = 0, index = -1, numNode = 0;
+			for (int j = 0; j < tempTable.size(); j++)
+			{
+				if (tempTable.get(j).getTwoHopNeighbors().size() > maxSize)
+				{
+					maxSize = tempTable.get(j).getTwoHopNeighbors().size();
+					numNode = tempTable.get(j).getNodeNumber();
+					index = j;
+				}
+			}
+			if (maxSize != 0)
+			{
+				for (int j = 0; j < neighborTable.size(); j++)
+				{
+					if (neighborTable.get(j).getNodeNumber() == numNode)
+					{
+						neighborTable.get(j).setLinkStatus(2);
+						break;
+					}
+				}
+				for (int j = 0; j < tempTable.get(index).getTwoHopNeighbors().size(); j++)
+				{
+					int neighbor = tempTable.get(j).getTwoHopNeighbors().get(j);
+					int neighborIndex = 0;
+					for (int k = 0; k < neighborTable.size(); k++)
+					{
+						neighborIndex = neighborTable.get(k).getTwoHopNeighbors().indexOf(neighbor);
+						if (neighborIndex != -1)
+						{
+							neighborTable.get(k).getTwoHopNeighbors().remove(neighborIndex);
+						}
+					}
+				}
+				tempTable.remove(index);
+			}
+		}
+	}
+	
 	/**
 	 * Terminate can be called to terminate execution of the thread. A join should be
 	 * called afterward in order to wait for the thread to finish.
@@ -167,6 +228,22 @@ public class SocketReceiver implements Runnable{
 		
 	} // end terminate()
 	
+	public void startHelper(){
+		helper       = new SocketReceiverHelper(number, nodes);
+		helperThread = new Thread(helper);
+		helperThread.start();
+	}
+	
+	public void stopHelper(){
+		helper.terminate();
+		
+		try {
+			helperThread.join();
+		} catch (InterruptedException e) {
+			System.out.println("SocketReceiver: Helper thread interruption problem.");
+		}
+	}
+	
 	/**
 	 * Run command called automatically by Thread.start().
 	 * 
@@ -177,7 +254,10 @@ public class SocketReceiver implements Runnable{
 	@Override
 	public void run(){
 	
+		startHelper();
+		
 		boolean isTrash = false;
+		Node prevNode = null;
 		
 		try {
 			this.sLine.open(this.format);
@@ -203,10 +283,7 @@ public class SocketReceiver implements Runnable{
 			int destination = ((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128;
 			int prevHop     = ((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128;
 			
-			Node prevNode = getNode(prevHop);
-			if(prevNode == null){
-				System.out.println("Invalid Previous Hop");
-			}
+			System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
 			
 			if (sequence == 0){
 				if(source == 0){
@@ -214,8 +291,88 @@ public class SocketReceiver implements Runnable{
 				}
 			}
 			
-			if (!PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()) && running)
+			if(running){
+				prevNode = getNode(prevHop);
+				if(prevNode == null){
+					System.out.println("Invalid Previous Hop");
+				}
+			}
+			
+			if (running && !PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()))
 			{
+				if (sequence == 0)
+				{
+					int msgType = dp.getData()[8] + 128;
+					int length, neighbor, status;
+					boolean found = false;
+					switch (msgType)
+					{
+					case RESET_MESSAGE:
+						break;
+					case HELLO_MESSAGE:
+						for (int i = 0; i < neighborTable.size(); i++)
+						{
+							if (neighborTable.get(i).getNodeNumber() == source)
+							{
+								found = true;
+								if (neighborTable.get(i).getNumHops() == 2)
+								{
+									neighborTable.get(i).setNumHops(1);
+									neighborTable.get(i).setLinkStatus(1);
+								}
+							}
+						}
+						if (!found)
+						{
+							ArrayList<Integer> newNeighbors = new ArrayList<Integer>();
+							NeighborRow newNeighborRow = new NeighborRow(source, 0, 1, newNeighbors, 0, 1, false);
+							neighborTable.add(newNeighborRow);
+						}
+						found = false;
+						length = dp.getData()[9] + 128;
+						for (int i = 10; i < length; i += 3)
+						{
+							neighbor = ((dp.getData()[i] + 128) * 256) + dp.getData()[i + 1] + 128;
+							status   = dp.getData()[i + 2] + 128;
+							if (number == neighbor)
+							{
+								for (int j = 0; j < neighborTable.size(); j++)
+								{
+									if (neighborTable.get(j).getNodeNumber() == source)
+									{
+										found = true;
+										neighborTable.get(j).setLinkStatus(1);
+									}
+								}
+							}
+							else
+							{
+								for (int j = 0; j < neighborTable.size(); j++)
+								{
+									if (neighborTable.get(j).getNodeNumber() == source)
+									{
+										found = true;
+										if (neighborTable.get(j).getTwoHopNeighbors().indexOf(neighbor) == -1)
+										{
+											neighborTable.get(j).getTwoHopNeighbors().add(neighbor);
+										}
+									}
+								}
+							}
+							if (!found)
+							{
+								ArrayList<Integer> newNeighbors = new ArrayList<Integer>();
+								newNeighbors.add(neighbor);
+								NeighborRow newNeighborRow = new NeighborRow(source, 0, 2, newNeighbors, 0, 1, false);
+								neighborTable.add(newNeighborRow);
+							}
+						}
+						helper.updateNeighborTable(neighborTable);
+						break;
+					case TC_MESSAGE:
+						break;
+					}
+				}
 				
 				isTrash = checkTable(sequence, source, destination);
 			
@@ -228,12 +385,13 @@ public class SocketReceiver implements Runnable{
 			}
 			else
 			{
-				System.out.println("Packet Dropped For " + prevNode.getNumber());
+				//System.out.println("Packet Dropped");
 			}
 			isTrash = false;
 		} // end while
-		
+		stopHelper();
 		s.close();
+		System.out.println("receiver out");
 	} // end SocketReceiver.run()
 
 	

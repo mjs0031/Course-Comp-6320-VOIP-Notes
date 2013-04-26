@@ -29,7 +29,7 @@ import javax.sound.sampled.LineUnavailableException;
 
 public class Updater implements Runnable{
 	Node node;
-	Object lock;
+	Object lock = new Object();
 	boolean running = true;
 	String configFileLoc;
 	int nodeNum;
@@ -38,16 +38,17 @@ public class Updater implements Runnable{
 	 * Base constructor.
 	 * 
 	 */
-	public Updater(Node node, Object lock){
+	public Updater(Node node){
 		this.node = node;
-		this.lock = lock;
 	} // end Updater()
 	
 	/**
 	 * Ends the runnable.
 	 */
 	public void terminate(){
-		running = false;
+		synchronized(lock){
+			running = false;
+		}
 	}
 
 	/**
@@ -55,21 +56,27 @@ public class Updater implements Runnable{
 	 */
 	@Override
 	public void run(){	
-		while(running){
+		while(true){
 			synchronized(lock){
+				if(!running){
+					break;
+				}
+			}
 				try {
 					if(node.checkForUpdate()==true){
 						boolean wasSending = false;
 						if(node.isSending()){
 							wasSending = true;
 							node.stopSending();
+							System.out.println("stopped sending");
 						}
 						node.stopReceiving();
+						System.out.println("stopped receiving");
 						node.setup(node.getConfigFileLoc(), node.getNumber());
 						System.out.println("setup done");
 						node.startReceiving();
 						if(wasSending){
-							node.startSending(node.getSendDest());
+							System.out.println("stopped sending");		node.startSending(node.getSendDest());
 						}
 						System.out.println("Updated!");
 					}
@@ -81,12 +88,19 @@ public class Updater implements Runnable{
 
 				}
 			}
-			
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// Live on the edge.
+			System.out.println("Checked");
+			for(int i = 0; i < 2; i++){
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					// Live on the edge.
+				}
+				
+				synchronized(lock){
+					if(!running){
+						break;
+					}
+				}
 			}
-		}
 	} // end run()		
 } // end Updater class

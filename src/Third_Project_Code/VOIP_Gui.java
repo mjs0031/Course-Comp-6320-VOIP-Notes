@@ -134,7 +134,7 @@ public class VOIP_Gui extends JFrame{
 						node.setup(text_field_config_file.getText(), Integer.parseInt(text_field_home_node.getText()));
 						node.startReceiving();
 						
-						updater = new Updater(node, lock);
+						updater = new Updater(node);
 						updaterThread = new Thread(updater);
 						updaterThread.start();
 						
