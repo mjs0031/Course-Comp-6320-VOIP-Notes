@@ -188,6 +188,8 @@ public class SocketReceiver implements Runnable{
 			{
 				for (int j = 0; j < neighborTable.size(); j++)
 				{
+					System.out.println(neighborTable.get(j).getNodeNumber());
+					System.out.println(numNode);
 					if (neighborTable.get(j).getNodeNumber() == numNode)
 					{
 						neighborTable.get(j).setLinkStatus(2);
@@ -196,7 +198,7 @@ public class SocketReceiver implements Runnable{
 				}
 				for (int j = 0; j < tempTable.get(index).getTwoHopNeighbors().size(); j++)
 				{
-					int neighbor = tempTable.get(j).getTwoHopNeighbors().get(j);
+					int neighbor = tempTable.get(index).getTwoHopNeighbors().get(j);
 					int neighborIndex = 0;
 					for (int k = 0; k < neighborTable.size(); k++)
 					{

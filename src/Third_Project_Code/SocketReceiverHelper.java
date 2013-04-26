@@ -140,8 +140,8 @@ public class SocketReceiverHelper implements Runnable{
 		
 		int j = 0;
 		for(int i = 10; i < length; i+=3){
-			System.out.println(neighborTable.get(j).getNodeNumber());
-			System.out.println(neighborTable.get(j).getLinkStatus());
+			//System.out.println(neighborTable.get(j).getNodeNumber());
+			//System.out.println(neighborTable.get(j).getLinkStatus());
 			packet[i] = (byte)((neighborTable.get(j).getNodeNumber()/256)-128);
 			packet[i+1] = (byte)((neighborTable.get(j).getNodeNumber()%256)-128);
 			packet[i+2] = (byte)((neighborTable.get(j).getLinkStatus())-128);
