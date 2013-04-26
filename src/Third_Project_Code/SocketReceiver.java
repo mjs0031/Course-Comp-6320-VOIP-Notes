@@ -166,6 +166,13 @@ public class SocketReceiver implements Runnable{
 	
 	public void updateMPR()
 	{
+		for (int i = 0; i < neighborTable.size(); i++)
+		{
+			if (neighborTable.get(i).getLinkStatus() == 2)
+			{
+				neighborTable.get(i).setLinkStatus(1);
+			}
+		}
 		ArrayList<NeighborRow> tempTable = new ArrayList<NeighborRow>();
 		for (int i = 0; i < neighborTable.size(); i++)
 		{
