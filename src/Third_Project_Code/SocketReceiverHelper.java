@@ -73,6 +73,7 @@ public class SocketReceiverHelper implements Runnable{
 	} // end SocketReceiver()
 	
 	public void updateNeighborTable(ArrayList<NeighborRow> newTable){
+		System.out.println("updated1");
 		synchronized(neighborTableLock){
 			newNeighborTable = newTable;
 			neighborTableUpdated = true; 
@@ -132,16 +133,18 @@ public class SocketReceiverHelper implements Runnable{
 		String address;
 		int port;
 		
-		int length = 10 + neighborTable.size();
+		int length = 10 + (neighborTable.size()*3);
 		byte[] packet = new byte[length];			
 		
-		packet[8] = (byte)1;
-		packet[9] = (byte)(neighborTable.size() * 3);
+		packet[8] = (byte)(1-128);
+		packet[9] = (byte)(10 + (neighborTable.size()*3)-128);
 		
 		for(int i = 0; i < neighborTable.size(); i++){
+			System.out.println(neighborTable.get(i).getNodeNumber());
+			System.out.println(neighborTable.get(i).getLinkStatus());
 			packet[i+10] = (byte)((neighborTable.get(i).getNodeNumber()/256)-128);
 			packet[i+11] = (byte)((neighborTable.get(i).getNodeNumber()%256)-128);
-			packet[i+12] = (byte)((neighborTable.get(i).getLinkStatus()));
+			packet[i+12] = (byte)((neighborTable.get(i).getLinkStatus())-128);
 		}
 		
 		for(int i = 0; i < links.size(); i++){				
@@ -188,6 +191,7 @@ public class SocketReceiverHelper implements Runnable{
 				
 			synchronized(neighborTableLock){
 				if(neighborTableUpdated){
+					System.out.println("Updated2");
 					neighborTable = newNeighborTable;
 					neighborTableUpdated = false;
 				}
