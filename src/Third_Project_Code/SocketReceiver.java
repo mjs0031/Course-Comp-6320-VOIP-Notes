@@ -203,7 +203,9 @@ public class SocketReceiver implements Runnable{
 						neighborIndex = neighborTable.get(k).getTwoHopNeighbors().indexOf(neighbor);
 						if (neighborIndex != -1)
 						{
-							neighborTable.get(k).getTwoHopNeighbors().remove(neighborIndex);
+							ArrayList<Integer> tempArray = neighborTable.get(k).getTwoHopNeighbors();
+							tempArray.remove(neighborIndex);
+							neighborTable.get(k).setTwoHopNeighbors(tempArray);
 						}
 					}
 				}
