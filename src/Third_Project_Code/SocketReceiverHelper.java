@@ -73,7 +73,6 @@ public class SocketReceiverHelper implements Runnable{
 	} // end SocketReceiver()
 	
 	public void updateNeighborTable(ArrayList<NeighborRow> newTable){
-		System.out.println("updated1");
 		synchronized(neighborTableLock){
 			newNeighborTable = newTable;
 			neighborTableUpdated = true; 
@@ -120,7 +119,7 @@ public class SocketReceiverHelper implements Runnable{
 		
 		try{
 			s.send(dp);
-			System.out.println("Sending packet: " + (((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128) + "	" + (((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128) + "	" + (((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128) + "	" + (((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128));
+			//System.out.println("Sending packet: " + (((dp.getData()[0] + 128) * 256) + dp.getData()[1] + 128) + "	" + (((dp.getData()[2] + 128) * 256) + dp.getData()[3] + 128) + "	" + (((dp.getData()[4] + 128) * 256) + dp.getData()[5] + 128) + "	" + (((dp.getData()[6] + 128) * 256) + dp.getData()[7] + 128));
 		}// end try
 		catch (IOException e){
 			System.out.println("SocketReceiverHelper: Unable to send datagram packet.");
@@ -139,12 +138,14 @@ public class SocketReceiverHelper implements Runnable{
 		packet[8] = (byte)(1-128);
 		packet[9] = (byte)(10 + (neighborTable.size()*3)-128);
 		
-		for(int i = 0; i < neighborTable.size(); i++){
-			System.out.println(neighborTable.get(i).getNodeNumber());
-			System.out.println(neighborTable.get(i).getLinkStatus());
-			packet[i+10] = (byte)((neighborTable.get(i).getNodeNumber()/256)-128);
-			packet[i+11] = (byte)((neighborTable.get(i).getNodeNumber()%256)-128);
-			packet[i+12] = (byte)((neighborTable.get(i).getLinkStatus())-128);
+		int j = 0;
+		for(int i = 10; i < length; i+=3){
+			System.out.println(neighborTable.get(j).getNodeNumber());
+			System.out.println(neighborTable.get(j).getLinkStatus());
+			packet[i] = (byte)((neighborTable.get(j).getNodeNumber()/256)-128);
+			packet[i+1] = (byte)((neighborTable.get(j).getNodeNumber()%256)-128);
+			packet[i+2] = (byte)((neighborTable.get(j).getLinkStatus())-128);
+			j++;
 		}
 		
 		for(int i = 0; i < links.size(); i++){				
@@ -191,7 +192,6 @@ public class SocketReceiverHelper implements Runnable{
 				
 			synchronized(neighborTableLock){
 				if(neighborTableUpdated){
-					System.out.println("Updated2");
 					neighborTable = newNeighborTable;
 					neighborTableUpdated = false;
 				}

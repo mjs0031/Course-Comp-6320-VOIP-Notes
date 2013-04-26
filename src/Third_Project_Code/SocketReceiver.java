@@ -147,7 +147,7 @@ public class SocketReceiver implements Runnable{
 	
 	public void playPacket(){
 		System.arraycopy(this.dp.getData(), 8, playbuf, 0, playbuf.length);
-		System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
+		//System.out.println("Playing packet: " + (((this.dp.getData()[0] + 128) * 256) + this.dp.getData()[1] + 128) + "	" + (((this.dp.getData()[2] + 128) * 256) + this.dp.getData()[3] + 128) + "	" + (((this.dp.getData()[4] + 128) * 256) + this.dp.getData()[5] + 128) + "	" + (((this.dp.getData()[6] + 128) * 256) + this.dp.getData()[7] + 128));
 		this.sLine.write(playbuf, 0, playbuf.length);
 	}
 	
@@ -367,6 +367,7 @@ public class SocketReceiver implements Runnable{
 								neighborTable.add(newNeighborRow);
 							}
 						}
+						updateMPR();
 						helper.updateNeighborTable(neighborTable);
 						break;
 					case TC_MESSAGE:
@@ -391,7 +392,6 @@ public class SocketReceiver implements Runnable{
 		} // end while
 		stopHelper();
 		s.close();
-		System.out.println("receiver out");
 	} // end SocketReceiver.run()
 
 	
