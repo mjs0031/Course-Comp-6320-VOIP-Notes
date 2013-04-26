@@ -184,6 +184,8 @@ public class SocketReceiver implements Runnable{
 			int maxSize = 0, index = -1, numNode = 0;
 			for (int j = 0; j < tempTable.size(); j++)
 			{
+				System.out.println(tempTable.get(j).getTwoHopNeighbors().size());
+				System.out.println(tempTable.get(j).getNodeNumber());
 				if (tempTable.get(j).getTwoHopNeighbors().size() > maxSize)
 				{
 					maxSize = tempTable.get(j).getTwoHopNeighbors().size();
@@ -195,11 +197,12 @@ public class SocketReceiver implements Runnable{
 			{
 				for (int j = 0; j < neighborTable.size(); j++)
 				{
-					System.out.println(neighborTable.get(j).getNodeNumber());
-					System.out.println(numNode);
+					//System.out.println(neighborTable.get(j).getNodeNumber());
+					//System.out.println(numNode);
 					if (neighborTable.get(j).getNodeNumber() == numNode)
 					{
 						neighborTable.get(j).setLinkStatus(2);
+						//System.out.println(neighborTable.get(j).getLinkStatus());
 						break;
 					}
 				}
@@ -265,7 +268,7 @@ public class SocketReceiver implements Runnable{
 	@Override
 	public void run(){
 	
-		startHelper();
+		//startHelper();
 		
 		boolean isTrash = false;
 		Node prevNode = null;
@@ -311,7 +314,7 @@ public class SocketReceiver implements Runnable{
 			
 			if (running && !PacketDropRate.isPacketDropped(x, y, prevNode.getX(), prevNode.getY()))
 			{
-				if (sequence == 0)
+				/*if (sequence == 0)
 				{
 					int msgType = dp.getData()[8] + 128;
 					int length, neighbor, status;
@@ -352,7 +355,9 @@ public class SocketReceiver implements Runnable{
 									if (neighborTable.get(j).getNodeNumber() == source)
 									{
 										found = true;
-										neighborTable.get(j).setLinkStatus(1);
+										if(neighborTable.get(j).getLinkStatus() != 2){
+											neighborTable.get(j).setLinkStatus(1);
+										}
 									}
 								}
 							}
@@ -384,7 +389,7 @@ public class SocketReceiver implements Runnable{
 					case TC_MESSAGE:
 						break;
 					}
-				}
+				}*/
 				
 				isTrash = checkTable(sequence, source, destination);
 			
@@ -401,7 +406,7 @@ public class SocketReceiver implements Runnable{
 			}
 			isTrash = false;
 		} // end while
-		stopHelper();
+		//stopHelper();
 		s.close();
 	} // end SocketReceiver.run()
 

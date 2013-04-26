@@ -207,7 +207,7 @@ public class SocketReceiverHelper implements Runnable{
 			sendNeighborMessages();
 			sendTopologyMessages();
 			
-			for(int i = 0; i < 4; i++){
+			for(int i = 0; i < 40; i++){
 				try {
 					Thread.sleep(500);
 				} catch (InterruptedException e) {
