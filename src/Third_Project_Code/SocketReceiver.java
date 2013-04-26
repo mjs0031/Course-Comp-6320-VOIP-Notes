@@ -166,7 +166,50 @@ public class SocketReceiver implements Runnable{
 	
 	public void updateMPR()
 	{
-		
+		ArrayList<NeighborRow> tempTable = new ArrayList<NeighborRow>();
+		for (int i = 0; i < neighborTable.size(); i++)
+		{
+			tempTable.add(neighborTable.get(i));
+		}
+		int size = tempTable.size();
+		for (int i = 0; i < size; i++)
+		{
+			int maxSize = 0, index = -1, numNode = 0;
+			for (int j = 0; j < tempTable.size(); j++)
+			{
+				if (tempTable.get(j).getTwoHopNeighbors().size() > maxSize)
+				{
+					maxSize = tempTable.get(j).getTwoHopNeighbors().size();
+					numNode = tempTable.get(j).getNodeNumber();
+					index = j;
+				}
+			}
+			if (maxSize != 0)
+			{
+				for (int j = 0; j < neighborTable.size(); j++)
+				{
+					if (neighborTable.get(j).getNodeNumber() == numNode)
+					{
+						neighborTable.get(j).setLinkStatus(2);
+						break;
+					}
+				}
+				for (int j = 0; j < tempTable.get(index).getTwoHopNeighbors().size(); j++)
+				{
+					int neighbor = tempTable.get(j).getTwoHopNeighbors().get(j);
+					int neighborIndex = 0;
+					for (int k = 0; k < neighborTable.size(); k++)
+					{
+						neighborIndex = neighborTable.get(k).getTwoHopNeighbors().indexOf(neighbor);
+						if (neighborIndex != -1)
+						{
+							neighborTable.get(k).getTwoHopNeighbors().remove(neighborIndex);
+						}
+					}
+				}
+				tempTable.remove(index);
+			}
+		}
 	}
 	
 	/**
